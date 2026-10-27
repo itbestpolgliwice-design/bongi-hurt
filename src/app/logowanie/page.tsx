@@ -14,7 +14,10 @@ export default function Login() {
           { name: "password", label: "Hasło", type: "password" },
         ]}
       />
-      <p className="mt-4 text-sm text-neutral-400">
+      <p className="mt-3 text-sm">
+        <Link href="/nie-pamietam" className="text-neutral-400 underline">Nie pamiętasz hasła?</Link>
+      </p>
+      <p className="mt-2 text-sm text-neutral-400">
         Nie masz konta? <Link href="/rejestracja" className="text-lime-400">Załóż konto sklepu</Link>
       </p>
     </div>

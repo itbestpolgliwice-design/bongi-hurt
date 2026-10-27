@@ -32,3 +32,25 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+export async function resetPassword(_: unknown, form: FormData) {
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(String(form.get("email") ?? "").trim(), {
+    redirectTo: `${origin}/auth/callback?next=/nowe-haslo`,
+  });
+  if (error) return { error: error.message };
+  return { ok: "Wysłaliśmy link do ustawienia nowego hasła. Otwórz go w tej samej przeglądarce." };
+}
+
+export async function updatePassword(_: unknown, form: FormData) {
+  const pass = String(form.get("password") ?? "");
+  if (pass.length < 8) return { error: "Hasło musi mieć min. 8 znaków." };
+  if (pass !== String(form.get("password2") ?? "")) return { error: "Hasła nie są takie same." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: pass });
+  if (error) return { error: "Link wygasł — wyślij nowy z „Nie pamiętasz hasła?”." };
+  redirect("/");
+}
