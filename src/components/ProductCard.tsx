@@ -55,7 +55,7 @@ export default function ProductCard({ group, canBuy }: { group: Product[]; canBu
         <div className="mb-3 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-white">
           {p.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.image_url} alt={p.name} className="h-full w-full scale-[1.12] object-cover contrast-125 saturate-125" />
+            <img src={p.image_url} alt={p.name} className="h-full w-full object-cover contrast-125 saturate-125" />
           ) : (
             <span className="text-xs text-neutral-500">brak zdjęcia</span>
           )}
