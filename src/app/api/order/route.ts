@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import { canMailCustomers, sendMail } from "@/lib/mail";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 type Body = { items?: { id: string; qty: number }[]; note?: string };
@@ -63,30 +63,25 @@ export async function POST(req: Request) {
     </table>
     ${note ? `<p><b>Uwagi:</b> ${esc(note)}</p>` : ""}`;
 
-  if (process.env.RESEND_API_KEY && process.env.ORDER_EMAIL) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const from = process.env.MAIL_FROM ?? "Zamówienia <onboarding@resend.dev>";
-    try {
-      await resend.emails.send({
-        from,
-        to: process.env.ORDER_EMAIL.split(",").map((s) => s.trim()),
+  try {
+    if (process.env.ORDER_EMAIL) {
+      await sendMail({
+        to: process.env.ORDER_EMAIL.split(",").map((x) => x.trim()),
         replyTo: profile.email ?? user.email ?? undefined,
         subject: `Zamówienie #${order.id} — ${profile.company_name ?? user.email}`,
         html,
       });
-      if (profile.email && process.env.MAIL_FROM) {
-        await resend.emails.send({
-          from,
-          to: profile.email,
-          subject: `Potwierdzenie zamówienia #${order.id} — BEST-POL`,
-          html: `<p>Dziękujemy, przyjęliśmy zamówienie. Skontaktujemy się w sprawie realizacji.</p>${html}`,
-        });
-      }
-    } catch (e) {
-      console.error("Błąd wysyłki maila", e); // zamówienie i tak jest zapisane w bazie
     }
-  } else {
-    console.warn("Brak RESEND_API_KEY / ORDER_EMAIL — mail nie wysłany");
+    const customer = profile.email ?? user.email;
+    if (customer && canMailCustomers()) {
+      await sendMail({
+        to: customer,
+        subject: `Potwierdzenie zamówienia #${order.id} — BEST-POL`,
+        html: `<p>Dziękujemy, przyjęliśmy zamówienie. Skontaktujemy się w sprawie realizacji.</p>${html}`,
+      });
+    }
+  } catch (e) {
+    console.error("Błąd wysyłki maila", e); // zamówienie i tak jest zapisane w bazie
   }
 
   return NextResponse.json({ orderId: order.id });
