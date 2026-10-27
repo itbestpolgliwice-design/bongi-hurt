@@ -63,16 +63,18 @@ export async function POST(req: Request) {
     </table>
     ${note ? `<p><b>Uwagi:</b> ${esc(note)}</p>` : ""}`;
 
+  let mail = "";
   try {
     const orderTo = process.env.ORDER_TO || process.env.ORDER_EMAIL; // ORDER_TO = mail hurtowni
     if (orderTo) {
-      await sendMail({
+      const sent = await sendMail({
         to: orderTo.split(",").map((x) => x.trim()),
         replyTo: profile.email ?? user.email ?? undefined,
         subject: `Nowe zamówienie BONGA: #${order.id} - ${profile.company_name || user.email}`,
         html,
       });
-    }
+      mail = sent ? "hurtownia: ok" : "hurtownia: brak konfiguracji maila";
+    } else mail = "brak ORDER_TO";
     const customer = profile.email ?? user.email;
     if (customer && canMailCustomers()) {
       await sendMail({
@@ -80,10 +82,13 @@ export async function POST(req: Request) {
         subject: `Potwierdzenie zamówienia #${order.id} — BEST-POL`,
         html: `<p>Dziękujemy, przyjęliśmy zamówienie. Skontaktujemy się w sprawie realizacji.</p>${html}`,
       });
-    }
+      mail += ", potwierdzenie: ok";
+    } else mail += ", potwierdzenie: wyłączone";
   } catch (e) {
     console.error("Błąd wysyłki maila", e); // zamówienie i tak jest zapisane w bazie
+    mail += " BŁĄD: " + (e instanceof Error ? e.message : String(e));
   }
 
-  return NextResponse.json({ orderId: order.id });
+  // status maila widzi tylko admin (diagnostyka)
+  return NextResponse.json(profile.is_admin ? { orderId: order.id, mail } : { orderId: order.id });
 }
