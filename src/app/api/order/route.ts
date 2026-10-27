@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       await sendMail({
         to: process.env.ORDER_EMAIL.split(",").map((x) => x.trim()),
         replyTo: profile.email ?? user.email ?? undefined,
-        subject: `Zamówienie #${order.id} — ${profile.company_name ?? user.email}`,
+        subject: `Nowe zamówienie BONGA: #${order.id} - ${profile.company_name || user.email}`,
         html,
       });
     }
