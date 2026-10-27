@@ -19,6 +19,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="pl">
       <body className="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+        {/* filtr wyostrzający przezroczyste szkło na zdjęciach (gamma) */}
+        <svg width="0" height="0" className="absolute" aria-hidden>
+          <filter id="szklo" colorInterpolationFilters="sRGB">
+            <feComponentTransfer>
+              <feFuncR type="gamma" exponent="4" />
+              <feFuncG type="gamma" exponent="4" />
+              <feFuncB type="gamma" exponent="4" />
+            </feComponentTransfer>
+          </filter>
+        </svg>
         <CartProvider>
           <header className="sticky top-0 z-10 border-b border-neutral-800 bg-neutral-950/90 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
