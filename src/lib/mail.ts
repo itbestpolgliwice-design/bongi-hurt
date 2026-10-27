@@ -2,7 +2,7 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
-type Mail = { to: string | string[]; subject: string; html: string; replyTo?: string };
+type Mail = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string };
 
 /**
  * Wysyłka maili. Kolejność:
@@ -29,6 +29,26 @@ export async function sendMail(m: Mail): Promise<boolean> {
       html: m.html,
       replyTo: m.replyTo,
     });
+    return true;
+  }
+
+  // FormSubmit.co: bez hasła i bez konta. Pierwszy mail przychodzi z linkiem „Activate”
+  // na adres hurtowni — po kliknięciu kolejne zamówienia idą już normalnie.
+  // Włączane zmienną FORMSUBMIT=1 (wysyła tylko na adres hurtowni, nie do sklepów).
+  if (process.env.FORMSUBMIT === "1") {
+    const to = Array.isArray(m.to) ? m.to[0] : m.to;
+    const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(to)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: m.subject,
+        _template: "box",
+        _captcha: "false",
+        ...(m.replyTo ? { _replyto: m.replyTo } : {}),
+        "Zamówienie": m.text ?? m.html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(tr|p|h2)>/gi, "\n").replace(/<\/td>/gi, " | ").replace(/<[^>]+>/g, "").replace(/\n{3,}/g, "\n\n").trim(),
+      }),
+    });
+    if (!res.ok) throw new Error(`FormSubmit ${res.status}`);
     return true;
   }
 
