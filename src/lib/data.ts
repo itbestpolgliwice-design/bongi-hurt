@@ -17,6 +17,7 @@ export type Product = {
   group_code: string | null;
   variant_name: string | null;
   price_net?: number | null;
+  price_gross?: number | null;
 };
 export type Profile = {
   id: string;
@@ -52,12 +53,15 @@ export async function getProducts(opts: { category?: string; q?: string; sku?: s
   }
   const { data: products } = await query;
 
-  const { data: prices } = await supabase.from("product_prices").select("product_id,price_net");
-  const priceMap = new Map((prices ?? []).map((p) => [p.product_id, Number(p.price_net)]));
+  const { data: prices } = await supabase.from("product_prices").select("product_id,price_net,price_gross");
+  const priceMap = new Map((prices ?? []).map((p) => [p.product_id, p]));
 
   return {
     categories: (categories ?? []) as Category[],
-    products: ((products ?? []) as Product[]).map((p) => ({ ...p, price_net: priceMap.get(p.id) ?? null })),
+    products: ((products ?? []) as Product[]).map((p) => {
+      const pr = priceMap.get(p.id);
+      return { ...p, price_net: pr ? Number(pr.price_net) : null, price_gross: pr?.price_gross != null ? Number(pr.price_gross) : null };
+    }),
   };
 }
 

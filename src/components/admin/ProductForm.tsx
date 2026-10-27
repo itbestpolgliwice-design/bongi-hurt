@@ -45,7 +45,7 @@ export default function ProductForm({ product, price, categories }: { product: P
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
-        <label className="text-sm"><span className="text-neutral-400">Cena hurtowa netto (zł)</span><input name="price_net" defaultValue={price ?? ""} inputMode="decimal" className={input} /></label>
+        <label className="text-sm"><span className="text-neutral-400">Cena brutto (zł) — netto liczy się samo</span><input name="price_gross" defaultValue={price ?? ""} inputMode="decimal" className={input} /></label>
         <label className="text-sm"><span className="text-neutral-400">Stan na magazynie (szt.)</span><input name="stock_qty" type="number" min={0} defaultValue={v("stock_qty")} className={input} /></label>
         <label className="text-sm"><span className="text-neutral-400">Wysokość (cm)</span><input name="height_cm" defaultValue={v("height_cm")} inputMode="decimal" className={input} /></label>
         <label className="text-sm"><span className="text-neutral-400">Materiał</span><input name="material" defaultValue={v("material")} placeholder="szkło / akryl / silikon" className={input} /></label>

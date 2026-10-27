@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
+import { netOf } from "@/lib/format";
 import { readCatalogFile, saveCatalog } from "@/lib/catalog-import";
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -35,9 +36,9 @@ export async function saveProduct(_: unknown, f: FormData) {
   const { data, error } = await q.select("id").single();
   if (error) return { error: error.code === "23505" ? "Taki kod już istnieje." : error.message };
 
-  const price = n(f, "price_net");
-  if (price != null && !Number.isNaN(price)) {
-    await db.from("product_prices").upsert({ product_id: data.id, price_net: price });
+  const price = n(f, "price_gross");
+  if (price != null && !Number.isNaN(price) && price > 0) {
+    await db.from("product_prices").upsert({ product_id: data.id, price_net: netOf(price), price_gross: price });
   } else {
     await db.from("product_prices").delete().eq("product_id", data.id);
   }

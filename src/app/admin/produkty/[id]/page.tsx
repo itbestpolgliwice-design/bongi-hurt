@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
+import { grossOf } from "@/lib/format";
 import ProductForm from "@/components/admin/ProductForm";
 import { deleteProduct } from "../../actions";
 
@@ -12,8 +13,8 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
     const { data } = await db.from("products").select("*").eq("id", id).maybeSingle();
     if (!data) notFound();
     product = data;
-    const { data: pr } = await db.from("product_prices").select("price_net").eq("product_id", id).maybeSingle();
-    price = pr ? Number(pr.price_net) : null;
+    const { data: pr } = await db.from("product_prices").select("price_net,price_gross").eq("product_id", id).maybeSingle();
+    price = pr ? grossOf(Number(pr.price_net), pr.price_gross) : null;
   }
   return (
     <div>

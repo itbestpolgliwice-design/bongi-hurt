@@ -131,3 +131,6 @@ on conflict (id) do nothing;
 alter table public.products add column if not exists stock_qty int;
 alter table public.products add column if not exists group_code text;
 alter table public.products add column if not exists variant_name text;
+-- cena brutto z cennika (żeby nie było różnic 1 gr przy przeliczaniu z netto)
+alter table public.product_prices add column if not exists price_gross numeric(10,2);
+alter table public.orders add column if not exists total_gross numeric(12,2);

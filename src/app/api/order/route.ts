@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { canMailCustomers, sendMail } from "@/lib/mail";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { grossOf } from "@/lib/format";
 
 type Body = { items?: { id: string; qty: number }[]; note?: string };
 const zl = (n: number) => n.toLocaleString("pl-PL", { style: "currency", currency: "PLN" });
-const gross = (n: number) => Math.round(n * 123) / 100;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 export async function POST(req: Request) {
@@ -24,34 +24,37 @@ export async function POST(req: Request) {
 
   const { data: rows } = await admin
     .from("products")
-    .select("id,sku,name,variant_name,pack_qty,active,in_stock,product_prices(price_net)")
+    .select("id,sku,name,variant_name,pack_qty,active,in_stock,product_prices(price_net,price_gross)")
     .in("id", wanted.map((i) => i.id));
 
   const items = [];
   for (const w of wanted) {
     const p = rows?.find((r) => r.id === w.id);
-    const pp = p?.product_prices as unknown as { price_net: number } | { price_net: number }[] | null;
-    const price = Array.isArray(pp) ? pp[0]?.price_net : pp?.price_net;
+    type PP = { price_net: number; price_gross: number | null };
+    const raw = p?.product_prices as unknown as PP | PP[] | null;
+    const pp = Array.isArray(raw) ? raw[0] : raw;
+    const price = pp?.price_net;
     if (!p || !p.active || price == null) continue;
     const qty = Math.max(p.pack_qty, Math.ceil(w.qty / p.pack_qty) * p.pack_qty);
-    items.push({ sku: p.sku, name: p.variant_name ? `${p.name} – ${p.variant_name}` : p.name, qty, price_net: Number(price) });
+    items.push({ sku: p.sku, name: p.variant_name ? `${p.name} – ${p.variant_name}` : p.name, qty, price_net: Number(price), price_gross: grossOf(Number(price), pp?.price_gross) });
   }
   if (!items.length) return NextResponse.json({ error: "Produkty niedostępne." }, { status: 400 });
 
   const total = Math.round(items.reduce((s, i) => s + i.qty * i.price_net, 0) * 100) / 100;
+  const totalGross = Math.round(items.reduce((s, i) => s + i.qty * i.price_gross, 0) * 100) / 100;
   const note = (body.note ?? "").slice(0, 1000);
 
   // 3. zapis
   const { data: order, error } = await admin
     .from("orders")
-    .insert({ user_id: user.id, items, total_net: total, note })
+    .insert({ user_id: user.id, items, total_net: total, total_gross: totalGross, note })
     .select("id")
     .single();
   if (error || !order) return NextResponse.json({ error: "Nie udało się zapisać zamówienia." }, { status: 500 });
 
   // 4. mail do BEST-POL + potwierdzenie do sklepu
   const rowsHtml = items
-    .map((i) => `<tr><td>${esc(i.sku)}</td><td>${esc(i.name)}</td><td align="right">${i.qty}</td><td align="right">${zl(gross(i.price_net))}</td><td align="right">${zl(gross(i.qty * i.price_net))}</td></tr>`)
+    .map((i) => `<tr><td>${esc(i.sku)}</td><td>${esc(i.name)}</td><td align="right">${i.qty}</td><td align="right">${zl(i.price_gross)}</td><td align="right">${zl(Math.round(i.qty * i.price_gross * 100) / 100)}</td></tr>`)
     .join("");
   const html = `
     <h2>Zamówienie #${order.id}</h2>
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
       <tr><th>Kod</th><th>Produkt</th><th>Ilość</th><th>Cena brutto</th><th>Wartość brutto</th></tr>
       ${rowsHtml}
-      <tr><td colspan="4" align="right"><b>Razem brutto</b></td><td align="right"><b>${zl(gross(total))}</b></td></tr>
+      <tr><td colspan="4" align="right"><b>Razem brutto</b></td><td align="right"><b>${zl(totalGross)}</b></td></tr>
       <tr><td colspan="4" align="right">w tym netto</td><td align="right">${zl(total)}</td></tr>
     </table>
     ${note ? `<p><b>Uwagi:</b> ${esc(note)}</p>` : ""}`;

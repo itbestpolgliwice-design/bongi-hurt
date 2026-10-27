@@ -6,7 +6,7 @@ export default async function Account() {
   const { user, profile } = await getViewer();
   if (!user) redirect("/logowanie");
   const supabase = await createClient();
-  const { data: orders } = await supabase.from("orders").select("id,total_net,status,created_at").order("created_at", { ascending: false });
+  const { data: orders } = await supabase.from("orders").select("id,total_net,total_gross,status,created_at").order("created_at", { ascending: false });
   return (
     <div className="max-w-2xl">
       <h1 className="mb-4 text-2xl font-bold">{profile?.company_name}</h1>
@@ -20,7 +20,7 @@ export default async function Account() {
               <tr key={o.id} className="border-b border-neutral-800">
                 <td className="py-2">#{o.id}</td>
                 <td>{new Date(o.created_at).toLocaleString("pl-PL")}</td>
-                <td>{zl(Math.round(Number(o.total_net) * 123) / 100)} brutto</td>
+                <td>{zl(o.total_gross != null ? Number(o.total_gross) : Math.round(Number(o.total_net) * 123) / 100)} brutto</td>
                 <td>{o.status}</td>
               </tr>
             ))}

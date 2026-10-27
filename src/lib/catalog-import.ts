@@ -78,7 +78,7 @@ function parseCsv(text: string): string[][] {
 
 export type ImportRow = {
   sku: string; ean: string | null; name: string; description: string | null; category: string | null;
-  height_cm: number | null; material: string | null; pack_qty: number; price_net: number | null;
+  height_cm: number | null; material: string | null; pack_qty: number; price_net: number | null; price_gross: number | null;
   in_stock: boolean; active: boolean; image_url: string | null; stock_qty: number | null;
   group_code: string | null; variant_name: string | null;
 };
@@ -127,6 +127,7 @@ export async function readCatalogFile(buf: ArrayBuffer, filename: string) {
       sku: r.sku, ean: r.ean || null, name: r.name, description: r.description || null,
       category: r.category || null, height_cm: toNum(r.height_cm), material: r.material || null,
       pack_qty: Math.max(1, Math.round(toNum(r.pack_qty) ?? 1)), price_net: price,
+      price_gross: gross ?? (price != null ? Math.round(price * 123) / 100 : null),
       in_stock: toBool(r.in_stock, stock == null ? true : stock > 0), active: toBool(r.active, true),
       // zdjęcie: link → zapis; nazwa pliku (BG-001.jpg) → przypisze się przy wgrywaniu zdjęć hurtem
       image_url: /^https?:\/\//i.test(r.image_url ?? "") ? r.image_url : null,
@@ -172,7 +173,7 @@ export async function saveCatalog(db: SupabaseClient, rows: ImportRow[]) {
       if (error) { errors.push(error.message); continue; }
       saved += data.length;
       const prices = data
-        .map((d) => ({ product_id: d.id, price_net: chunk.find((r) => r.sku === d.sku)?.price_net }))
+        .map((d) => { const r = chunk.find((x) => x.sku === d.sku); return { product_id: d.id, price_net: r?.price_net, price_gross: r?.price_gross }; })
         .filter((p) => p.price_net != null);
       if (prices.length) {
         const { error: pe } = await db.from("product_prices").upsert(prices, { onConflict: "product_id" });

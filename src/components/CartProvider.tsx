@@ -1,4 +1,5 @@
 "use client";
+import { grossOf } from "@/lib/format";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type CartItem = {
@@ -8,6 +9,7 @@ export type CartItem = {
   qty: number;
   pack_qty: number;
   price_net: number;
+  price_gross?: number;
   image_url: string | null;
 };
 
@@ -19,6 +21,7 @@ type Ctx = {
   clear: () => void;
   count: number;
   total: number;
+  totalGross: number;
 };
 
 const CartCtx = createContext<Ctx | null>(null);
@@ -58,6 +61,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     clear: () => setItems([]),
     count: items.reduce((s, i) => s + i.qty, 0),
     total: items.reduce((s, i) => s + i.qty * i.price_net, 0),
+    totalGross: Math.round(items.reduce((s, i) => s + i.qty * grossOf(i.price_net, i.price_gross), 0) * 100) / 100,
   };
   return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>;
 }

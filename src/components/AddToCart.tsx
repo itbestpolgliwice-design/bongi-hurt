@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useCart } from "./CartProvider";
 import type { Product } from "@/lib/data";
-import { fullName } from "@/lib/format";
+import { fullName, grossOf } from "@/lib/format";
 
 export default function AddToCart({ product }: { product: Product }) {
   const { add } = useCart();
@@ -24,7 +24,7 @@ export default function AddToCart({ product }: { product: Product }) {
         disabled={!product.in_stock}
         onClick={() => {
           add(
-            { id: product.id, sku: product.sku, name: fullName(product), pack_qty: product.pack_qty, price_net: product.price_net!, image_url: product.image_url },
+            { id: product.id, sku: product.sku, name: fullName(product), pack_qty: product.pack_qty, price_net: product.price_net!, price_gross: grossOf(product.price_net!, product.price_gross), image_url: product.image_url },
             qty
           );
           setDone(true);
