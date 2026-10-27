@@ -4,6 +4,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 type Body = { items?: { id: string; qty: number }[]; note?: string };
 const zl = (n: number) => n.toLocaleString("pl-PL", { style: "currency", currency: "PLN" });
+const gross = (n: number) => Math.round(n * 123) / 100;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 export async function POST(req: Request) {
@@ -50,16 +51,17 @@ export async function POST(req: Request) {
 
   // 4. mail do BEST-POL + potwierdzenie do sklepu
   const rowsHtml = items
-    .map((i) => `<tr><td>${esc(i.sku)}</td><td>${esc(i.name)}</td><td align="right">${i.qty}</td><td align="right">${zl(i.price_net)}</td><td align="right">${zl(i.qty * i.price_net)}</td></tr>`)
+    .map((i) => `<tr><td>${esc(i.sku)}</td><td>${esc(i.name)}</td><td align="right">${i.qty}</td><td align="right">${zl(gross(i.price_net))}</td><td align="right">${zl(gross(i.qty * i.price_net))}</td></tr>`)
     .join("");
   const html = `
     <h2>Zamówienie #${order.id}</h2>
     <p><b>${esc(profile.company_name ?? "")}</b><br>NIP: ${esc(profile.nip ?? "")}<br>${esc(profile.address ?? "")}<br>
     Tel: ${esc(profile.phone ?? "")}<br>E-mail: ${esc(profile.email ?? user.email ?? "")}</p>
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
-      <tr><th>Kod</th><th>Produkt</th><th>Ilość</th><th>Cena netto</th><th>Wartość netto</th></tr>
+      <tr><th>Kod</th><th>Produkt</th><th>Ilość</th><th>Cena brutto</th><th>Wartość brutto</th></tr>
       ${rowsHtml}
-      <tr><td colspan="4" align="right"><b>Razem netto</b></td><td align="right"><b>${zl(total)}</b></td></tr>
+      <tr><td colspan="4" align="right"><b>Razem brutto</b></td><td align="right"><b>${zl(gross(total))}</b></td></tr>
+      <tr><td colspan="4" align="right">w tym netto</td><td align="right">${zl(total)}</td></tr>
     </table>
     ${note ? `<p><b>Uwagi:</b> ${esc(note)}</p>` : ""}`;
 

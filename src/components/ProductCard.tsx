@@ -35,10 +35,10 @@ export function BuyBox({ p, canBuy, big }: { p: Product; canBuy: boolean; big?: 
   return (
     <>
       <div className={`${big ? "text-2xl" : "text-lg"} font-bold text-lime-400`}>
-        {zl(p.price_net)} <span className="text-xs font-normal text-neutral-400">netto</span>
+        {zl(Math.round(p.price_net * 123) / 100)} <span className="text-xs font-normal text-neutral-400">brutto</span>
       </div>
       <div className="mb-2 text-xs text-neutral-400">
-        {zl(Math.round(p.price_net * 123) / 100)} brutto · {p.in_stock ? `stan: ${p.stock_qty ?? "dostępny"}` : "brak"}
+        {zl(p.price_net)} netto · {p.in_stock ? `stan: ${p.stock_qty ?? "dostępny"}` : "brak"}
       </div>
       <AddToCart product={p} />
     </>

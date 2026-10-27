@@ -20,7 +20,7 @@ export default async function Account() {
               <tr key={o.id} className="border-b border-neutral-800">
                 <td className="py-2">#{o.id}</td>
                 <td>{new Date(o.created_at).toLocaleString("pl-PL")}</td>
-                <td>{zl(Number(o.total_net))} netto</td>
+                <td>{zl(Math.round(Number(o.total_net) * 123) / 100)} brutto</td>
                 <td>{o.status}</td>
               </tr>
             ))}
