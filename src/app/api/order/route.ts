@@ -64,9 +64,10 @@ export async function POST(req: Request) {
     ${note ? `<p><b>Uwagi:</b> ${esc(note)}</p>` : ""}`;
 
   try {
-    if (process.env.ORDER_EMAIL) {
+    const orderTo = process.env.ORDER_TO || process.env.ORDER_EMAIL; // ORDER_TO = mail hurtowni
+    if (orderTo) {
       await sendMail({
-        to: process.env.ORDER_EMAIL.split(",").map((x) => x.trim()),
+        to: orderTo.split(",").map((x) => x.trim()),
         replyTo: profile.email ?? user.email ?? undefined,
         subject: `Nowe zamówienie BONGA: #${order.id} - ${profile.company_name || user.email}`,
         html,
