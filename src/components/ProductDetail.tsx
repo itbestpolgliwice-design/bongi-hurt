@@ -9,10 +9,10 @@ export default function ProductDetail({ group, initialSku, canBuy }: { group: Pr
   const p = group[sel];
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-white">
+      <div className="flex aspect-[3/4] max-h-[80vh] items-center justify-center overflow-hidden rounded-xl bg-white">
         {p.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" />
+          <img src={p.image_url} alt={p.name} className="h-full w-full scale-[1.12] object-cover contrast-125 saturate-125" />
         ) : (
           <span className="text-neutral-500">brak zdjęcia</span>
         )}

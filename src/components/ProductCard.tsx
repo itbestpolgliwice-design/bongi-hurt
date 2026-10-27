@@ -52,10 +52,10 @@ export default function ProductCard({ group, canBuy }: { group: Product[]; canBu
   return (
     <div className="flex flex-col rounded-xl border border-neutral-800 bg-neutral-900/60 p-3">
       <Link href={`/produkt/${encodeURIComponent(p.sku)}`} className="block">
-        <div className="mb-3 flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-white">
+        <div className="mb-3 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-white">
           {p.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.image_url} alt={p.name} className="h-full w-full object-contain" />
+            <img src={p.image_url} alt={p.name} className="h-full w-full scale-[1.12] object-cover contrast-125 saturate-125" />
           ) : (
             <span className="text-xs text-neutral-500">brak zdjęcia</span>
           )}
