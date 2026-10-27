@@ -35,6 +35,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/" className="text-lg font-black tracking-tight">
                 BEST-POL <span className="text-lime-400">HURT</span>
               </Link>
+              <a href="https://epapierosy-hurt.pl" className="rounded-md border border-neutral-700 px-2.5 py-1 text-sm text-neutral-300 hover:border-lime-400 hover:text-white">
+                ← <span className="hidden sm:inline">Powrót do </span>hurtowni
+              </a>
               <nav className="ml-auto flex items-center gap-3 text-sm">
                 {user ? (
                   <>
@@ -67,6 +70,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </header>
           <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
           <footer className="border-t border-neutral-800 py-6 text-center text-xs text-neutral-500">
+            <a href="https://epapierosy-hurt.pl" className="text-neutral-400 underline hover:text-white">← Wróć do hurtowni epapierosy-hurt.pl</a>
+            <br />
             BEST-POL · sprzedaż hurtowa wyłącznie dla firm · produkty dla osób pełnoletnich
           </footer>
         </CartProvider>
