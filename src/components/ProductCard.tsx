@@ -45,6 +45,21 @@ export function BuyBox({ p, canBuy, big }: { p: Product; canBuy: boolean; big?: 
   );
 }
 
+/** Lampka dostępności: zielona = dostępny (z ilością), czerwona = niedostępny. */
+export function StockBadge({ p, className = "absolute left-2 top-2" }: { p: Product; className?: string }) {
+  const ok = p.in_stock && (p.stock_qty == null || p.stock_qty > 0);
+  return (
+    <span
+      className={`${className} z-10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow ${
+        ok ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+      }`}
+    >
+      <span className={`h-2 w-2 rounded-full ${ok ? "animate-pulse bg-lime-300" : "bg-red-200"}`} />
+      {ok ? `Dostępny${p.stock_qty != null ? ` · ${p.stock_qty} szt.` : ""}` : "Niedostępny"}
+    </span>
+  );
+}
+
 export default function ProductCard({ group, canBuy }: { group: Product[]; canBuy: boolean }) {
   const [sel, setSel] = useState(Math.max(0, group.findIndex((v) => v.in_stock)));
   const p = group[sel];
@@ -52,10 +67,11 @@ export default function ProductCard({ group, canBuy }: { group: Product[]; canBu
   return (
     <div className="flex flex-col rounded-xl border border-neutral-800 bg-neutral-900/60 p-3">
       <Link href={`/produkt/${encodeURIComponent(p.sku)}`} className="block">
-        <div className="mb-3 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-[#e8ecf0] to-[#d3d9df]">
+        <div className="relative mb-3 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-[#e8ecf0] to-[#d3d9df]">
+          <StockBadge p={p} />
           {p.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.image_url} alt={p.name} className="h-full w-full object-cover mix-blend-multiply [filter:url(#szklo)]" />
+            <img src={p.image_url} alt={p.name} className="h-full w-full object-cover mix-blend-multiply" />
           ) : (
             <span className="text-xs text-neutral-500">brak zdjęcia</span>
           )}
