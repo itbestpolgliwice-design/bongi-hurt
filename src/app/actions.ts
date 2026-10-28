@@ -23,8 +23,8 @@ export async function signUp(_: unknown, form: FormData) {
       data: { company_name: get("company_name"), nip: get("nip"), phone: get("phone"), address: get("address") },
     },
   });
-  if (error) return { error: error.message };
-  return { ok: "Konto założone. Potwierdź e-mail, a po zatwierdzeniu przez BEST-POL zobaczysz ceny." };
+  if (error) return { error: error.message.includes("already registered") ? "Konto z tym e-mailem już istnieje — zaloguj się." : error.message };
+  redirect("/konto");
 }
 
 export async function signOut() {
