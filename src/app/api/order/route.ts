@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { canMailCustomers, sendMail } from "@/lib/mail";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { grossOf } from "@/lib/format";
@@ -24,10 +25,11 @@ export async function POST(req: Request) {
 
   const { data: rows } = await admin
     .from("products")
-    .select("id,sku,name,variant_name,pack_qty,active,in_stock,product_prices(price_net,price_gross)")
+    .select("id,sku,name,variant_name,pack_qty,active,in_stock,stock_qty,product_prices(price_net,price_gross)")
     .in("id", wanted.map((i) => i.id));
 
   const items = [];
+  const short: string[] = [];
   for (const w of wanted) {
     const p = rows?.find((r) => r.id === w.id);
     type PP = { price_net: number; price_gross: number | null };
@@ -36,8 +38,14 @@ export async function POST(req: Request) {
     const price = pp?.price_net;
     if (!p || !p.active || price == null) continue;
     const qty = Math.max(p.pack_qty, Math.ceil(w.qty / p.pack_qty) * p.pack_qty);
+    const label = p.variant_name ? `${p.name} – ${p.variant_name}` : p.name;
+    if (!p.in_stock || (p.stock_qty != null && qty > p.stock_qty)) {
+      short.push(`${label}: dostępne ${p.in_stock ? p.stock_qty ?? 0 : 0} szt.`);
+      continue;
+    }
     items.push({ sku: p.sku, name: p.variant_name ? `${p.name} – ${p.variant_name}` : p.name, qty, price_net: Number(price), price_gross: grossOf(Number(price), pp?.price_gross) });
   }
+  if (short.length) return NextResponse.json({ error: `Za mało na magazynie — zmień ilość: ${short.join("; ")}` }, { status: 409 });
   if (!items.length) return NextResponse.json({ error: "Produkty niedostępne." }, { status: 400 });
 
   const total = Math.round(items.reduce((s, i) => s + i.qty * i.price_net, 0) * 100) / 100;
@@ -51,6 +59,11 @@ export async function POST(req: Request) {
     .select("id")
     .single();
   if (error || !order) return NextResponse.json({ error: "Nie udało się zapisać zamówienia." }, { status: 500 });
+
+  // stan magazynu schodzi od razu (przy anulowaniu w panelu wraca)
+  const { error: se } = await admin.rpc("adjust_stock", { p_items: items, p_sign: -1 });
+  if (se) console.error("Błąd zdejmowania stanu", se);
+  revalidatePath("/", "layout");
 
   // 4. mail do BEST-POL + potwierdzenie do sklepu
   const rowsHtml = items

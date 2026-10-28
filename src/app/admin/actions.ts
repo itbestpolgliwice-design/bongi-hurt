@@ -101,6 +101,13 @@ export async function setApproved(f: FormData) {
 
 export async function setOrderStatus(f: FormData) {
   const db = await requireAdmin();
-  await db.from("orders").update({ status: s(f, "status") }).eq("id", s(f, "id"));
-  revalidatePath("/admin/zamowienia");
+  const status = s(f, "status");
+  const { data: old } = await db.from("orders").select("status,items").eq("id", s(f, "id")).single();
+  await db.from("orders").update({ status }).eq("id", s(f, "id"));
+  // anulowanie oddaje towar na stan, cofnięcie anulowania znowu go zdejmuje
+  if (old && old.status !== status) {
+    if (status === "anulowane") await db.rpc("adjust_stock", { p_items: old.items, p_sign: 1 });
+    else if (old.status === "anulowane") await db.rpc("adjust_stock", { p_items: old.items, p_sign: -1 });
+  }
+  revalidatePath("/", "layout");
 }

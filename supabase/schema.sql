@@ -134,3 +134,15 @@ alter table public.products add column if not exists variant_name text;
 -- cena brutto z cennika (żeby nie było różnic 1 gr przy przeliczaniu z netto)
 alter table public.product_prices add column if not exists price_gross numeric(10,2);
 alter table public.orders add column if not exists total_gross numeric(12,2);
+
+-- stan magazynu: zdejmowanie przy zamówieniu (sign -1), zwrot przy anulowaniu (sign +1)
+create or replace function public.adjust_stock(p_items jsonb, p_sign int)
+returns void language sql security definer set search_path = public as $$
+  update public.products p
+     set stock_qty = greatest(0, p.stock_qty + p_sign * x.q),
+         in_stock  = greatest(0, p.stock_qty + p_sign * x.q) > 0
+    from (select i->>'sku' as sku, sum((i->>'qty')::int) as q
+            from jsonb_array_elements(p_items) i group by 1) x
+   where p.sku = x.sku and p.stock_qty is not null;
+$$;
+revoke execute on function public.adjust_stock(jsonb, int) from public, anon, authenticated;
