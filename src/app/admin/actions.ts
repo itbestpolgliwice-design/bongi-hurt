@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
+import { createClient } from "@/lib/supabase/server";
 import { netOf } from "@/lib/format";
 import { readCatalogFile, saveCatalog } from "@/lib/catalog-import";
 
@@ -96,6 +97,16 @@ export async function importCatalog(_: unknown, f: FormData) {
 export async function setApproved(f: FormData) {
   const db = await requireAdmin();
   await db.from("profiles").update({ approved: s(f, "approved") === "true" }).eq("id", s(f, "id"));
+  revalidatePath("/admin/sklepy");
+}
+
+export async function setAdmin(f: FormData) {
+  const db = await requireAdmin();
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  const id = s(f, "id");
+  if (id === user?.id) return; // nie odbieramy admina samemu sobie
+  const on = s(f, "admin") === "true";
+  await db.from("profiles").update(on ? { is_admin: true, approved: true } : { is_admin: false }).eq("id", id);
   revalidatePath("/admin/sklepy");
 }
 
